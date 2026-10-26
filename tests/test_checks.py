@@ -1,5 +1,6 @@
 import pytest
 from django.core import checks
+from django.core.management import call_command
 
 from django_notification_rules.models import NotificationRule, RuleRecipient, RuleTemplate
 
@@ -65,3 +66,16 @@ def test_the_stored_rules(make_rule):
         "django_notification_rules.W103",
     ]
     assert ids() == []  # without the database, the stored rules aren't read
+
+
+@pytest.mark.django_db(transaction=True)
+def test_migrate_runs_its_checks_before_the_tables_exist():
+    """`migrate` runs the database checks before migrating: on a database without the library's tables (a new one, or
+    a project adding the library) they leave the rules unchecked rather than fail it."""
+    call_command("migrate", "django_notification_rules", "zero", verbosity=0)
+    try:
+        assert ids(["default"]) == []
+        call_command("migrate", "django_notification_rules", skip_checks=False, verbosity=0)
+    finally:
+        call_command("migrate", "django_notification_rules", verbosity=0)
+    assert ids(["default"]) == []
