@@ -11,10 +11,14 @@ against the code and the settings (`W101`..., with `check --database default`: t
 | W102 | a rule whose channel isn't set up |
 | W103 | a recipient naming a resolver the code doesn't declare, or a permission that doesn't exist |
 | E101 | a rule whose condition can't be evaluated, or a template that doesn't compile |
+
+The stored rules aren't checked on a database the library's migrations haven't reached (`migrate` runs the database
+checks before it migrates): the migrations' own checks tell.
 """
 
 from django.conf import settings
 from django.core.checks import Error, Tags, Warning, register
+from django.db import DatabaseError
 from django.utils.module_loading import import_string
 
 from . import conf
@@ -68,6 +72,13 @@ def check_settings(app_configs=None, **kwargs):
 def check_rules(app_configs=None, databases=None, **kwargs):
     if not databases:
         return []
+    try:
+        return _stored_rules()
+    except DatabaseError:  # not migrated yet: the migrations' own checks tell
+        return []
+
+
+def _stored_rules():
     from django.contrib.auth.models import Permission
 
     from . import channels, conditions, events, recipients, templating
