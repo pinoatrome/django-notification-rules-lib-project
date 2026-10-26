@@ -196,7 +196,10 @@ python manage.py notification_rules_purge --days 90   # events (with their deliv
 
 ## Supported versions
 
-Python 3.10–3.14, Django 5.2 and 6.1, Django REST framework 3.16+ (optional).
+Python 3.10–3.14 and Django 4.2 (on Python 3.10–3.12), 5.2 and 6.1; Django REST framework 3.15+ (optional).
+
+Django 4.2 LTS is supported by the 0.1.x releases only (`stable/0.1.x`, fixes only): from 0.2, the library
+needs Django 5.2 or later. On Django 4.2, pin `django-notification-rules<0.2`.
 
 ## Development
 
