@@ -29,6 +29,126 @@ INSTALLED_APPS = [..., "django_notification_rules"]
 
 Then `python manage.py migrate`.
 
+## Example: a shop's orders
+
+A shop wants two notifications when an order is placed: the sales team hears of the big ones (1,000 EUR or more),
+in the app and on the console while developing; every customer gets a confirmation in their own language. The code
+says *what happened*; who hears of it, and how, is set up as rules.
+
+**1. The event type**, in the `shop` app's `events.py`:
+
+```python
+from django.utils.translation import gettext_lazy as _
+from django_notification_rules.events import Field, event
+
+
+@event(
+    "shop.order_placed",
+    fields={
+        "number": Field("str", _("Order number")),
+        "amount": Field("decimal", _("Amount")),
+        "customer": Field("str", _("Customer's username")),
+        "order_id": Field("int", _("Order id")),
+    },
+)
+def order_placed():
+    """A customer placed an order."""
+    return {"number": "A-1042", "amount": "1250.00", "customer": "ann", "order_id": 42}
+```
+
+**2. Who the customer is**, in `shop/recipients.py`:
+
+```python
+from django.contrib.auth import get_user_model
+from django_notification_rules.recipients import recipients
+
+
+@recipients("order_customer")
+def order_customer(event):
+    """The customer who placed the order."""
+    return get_user_model().objects.filter(username=event.data["customer"])
+```
+
+**3. The channels and the recipients' language**, in the settings:
+
+```python
+NOTIFICATION_RULES = {
+    "CHANNELS": {
+        "inbox": {"BACKEND": "django_notification_rules.channels.inbox.InboxChannel"},
+        "console": {"BACKEND": "django_notification_rules.channels.console.ConsoleChannel"},
+    },
+    "USER_LANGUAGE": "shop.users.language_of",  # def language_of(user): return user.profile.language
+}
+```
+
+**4. Emit it** where the order is placed:
+
+```python
+from django.db import transaction
+from django_notification_rules.events import emit
+
+
+@transaction.atomic
+def place_order(user, cart):
+    order = Order.objects.create(customer=user, total=cart.total, ...)
+    emit("shop.order_placed", number=order.number, amount=order.total, customer=user.username,
+         order_id=order.pk, actor=user)
+    return order
+```
+
+Nothing is sent if the transaction rolls back: the event is recorded, and its rules act, once it commits.
+
+**5. The rules**, set up in the admin (**Notification rules**), or kept with the code as `notification-rules.yaml`
+and loaded with `python manage.py notification_rules_load notification-rules.yaml`:
+
+```yaml
+rules:
+  - name: Big orders to the sales team
+    event: shop.order_placed
+    condition: {field: amount, op: gte, value: "1000"}
+    recipients: [{group: SALES}]
+    channels: [inbox, console]
+    templates:
+      - channel: "*"
+        language: ""
+        subject: "Big order {{ number }}"
+        body: "{{ amount }} EUR from {{ customer }}"
+        link: "/admin/shop/order/{{ order_id }}/"
+
+  - name: Order confirmation
+    event: shop.order_placed
+    recipients: [{resolver: order_customer}]
+    channels: [inbox]
+    templates:
+      - {channel: "*", language: "", subject: "Order {{ number }} received",
+         body: "Thank you, {{ recipient.first_name }}: we're preparing your order of {{ amount }} EUR."}
+      - {channel: "*", language: "it", subject: "Ordine {{ number }} ricevuto",
+         body: "Grazie, {{ recipient.first_name }}: stiamo preparando il tuo ordine di {{ amount }} EUR."}
+```
+
+**What happens.** Ann (her language Italian) places order A-1042 for 1,250.00 EUR, and Bob is in the SALES group.
+The console prints Bob's notification:
+
+```
+[console] shop.order_placed → bob (en)
+Big order A-1042
+1250.00 EUR from ann
+/admin/shop/order/42/
+```
+
+Bob's app finds the same in his inbox, and Ann's finds her confirmation in Italian, the amount written as Italians
+write it (`GET /api/notifications/inbox/?unread=1`, with the REST API included):
+
+```json
+[{"id": 7, "event_code": "shop.order_placed", "subject": "Ordine A-1042 ricevuto",
+  "body": "Grazie, Ann: stiamo preparando il tuo ordine di 1250,00 EUR.", "link": "",
+  "created_at": "2026-10-26T10:15:02Z", "read_at": null, "read": false}]
+```
+
+An order of 80 EUR only confirms to its customer. Each of these notifications is a row of **Deliveries** in the
+admin (sent, or failed with its error), under the event in **Events**. To also alert the team another way (e-mail
+from 0.2, or a channel of your own), set the channel up and add it to the rule: the code doesn't change.
+
 ## Declare events
 
 In any installed app, an `events.py` (discovered as the admin discovers `admin.py`):
