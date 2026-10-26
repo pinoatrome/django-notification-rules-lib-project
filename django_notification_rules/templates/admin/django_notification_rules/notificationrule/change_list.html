@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li><a href="{% url opts|admin_urlname:'overview' %}">{% translate "Overview" %}</a></li>
+  <li><a href="{% url opts|admin_urlname:'check' %}">{% translate "Check configuration" %}</a></li>
+  <li><a href="{% url opts|admin_urlname:'export' %}">{% translate "Export YAML" %}</a></li>
+  {% if request.user.is_superuser %}
+    <li><a href="{% url opts|admin_urlname:'load' %}">{% translate "Load YAML" %}</a></li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
