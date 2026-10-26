@@ -25,16 +25,25 @@ def test_without_a_cache_the_database_each_time(make_rule):
 
 def test_the_rules_as_the_dispatcher_reads_them(make_rule, member):
     ann = member("ann")
-    rule = make_rule("a", channels=("memory", "inbox"), recipients=[("user", ann)],
-                     templates={("inbox", "it"): ("S", "B", "L")}, condition={"field": "number", "op": "eq", "value": "x"})
+    rule = make_rule(
+        "a",
+        channels=("memory", "inbox"),
+        recipients=[("user", ann)],
+        templates={("inbox", "it"): ("S", "B", "L")},
+        condition={"field": "number", "op": "eq", "value": "x"},
+    )
     RuleChannel.objects.filter(rule=rule, channel="inbox").update(enabled=False)
 
     [read] = cache.rules_for("orders.placed")
 
-    assert read == {"id": rule.pk, "name": "a", "condition": {"field": "number", "op": "eq", "value": "x"},
-                    "recipients": [{"kind": "user", "user_id": ann.pk, "group_id": None, "value": ""}],
-                    "channels": ["memory"],
-                    "templates": [{"channel": "inbox", "language": "it", "subject": "S", "body": "B", "link": "L"}]}
+    assert read == {
+        "id": rule.pk,
+        "name": "a",
+        "condition": {"field": "number", "op": "eq", "value": "x"},
+        "recipients": [{"kind": "user", "user_id": ann.pk, "group_id": None, "value": ""}],
+        "channels": ["memory"],
+        "templates": [{"channel": "inbox", "language": "it", "subject": "S", "body": "B", "link": "L"}],
+    }
 
 
 def test_kept_in_the_cache_and_dropped_once_a_rule_changes(cached, make_rule, django_capture_on_commit_callbacks):

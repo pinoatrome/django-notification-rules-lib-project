@@ -9,15 +9,22 @@ pytestmark = pytest.mark.django_db
 
 def test_a_rule_notifies_its_recipients_through_its_channels(make_rule, member, emit, outbox):
     ann, bob = member("ann"), member("bob")
-    make_rule(channels=("memory", "inbox"), recipients=[("user", ann), ("user", bob)],
-              templates={("*", ""): ("Order {{ number }}", "for {{ recipient.username }}", "")})
+    make_rule(
+        channels=("memory", "inbox"),
+        recipients=[("user", ann), ("user", bob)],
+        templates={("*", ""): ("Order {{ number }}", "for {{ recipient.username }}", "")},
+    )
 
     emit("orders.placed", number="A-1", amount="5")
 
     assert [(m["recipient"].username, m["subject"], m["body"]) for m in outbox] == [
-        ("ann", "Order A-1", "for ann"), ("bob", "Order A-1", "for bob")]
+        ("ann", "Order A-1", "for ann"),
+        ("bob", "Order A-1", "for bob"),
+    ]
     assert [(m.user.username, m.subject) for m in InboxMessage.objects.order_by("id")] == [
-        ("ann", "Order A-1"), ("bob", "Order A-1")]
+        ("ann", "Order A-1"),
+        ("bob", "Order A-1"),
+    ]
     assert Delivery.objects.filter(status="sent").count() == 4
     assert Delivery.objects.get(channel="inbox", recipient=ann).inbox_message.body == "for ann"
 
@@ -47,9 +54,13 @@ def test_a_channel_that_s_not_set_up_is_skipped(make_rule, member, emit, outbox)
 
 
 def test_a_failing_channel_fails_its_delivery_only(make_rule, member, emit, outbox, settings):
-    settings.NOTIFICATION_RULES = {**settings.NOTIFICATION_RULES, "CHANNELS": {
-        **settings.NOTIFICATION_RULES["CHANNELS"],
-        "down": {"BACKEND": "django_notification_rules.channels.memory.MemoryChannel", "FAIL": "gateway down"}}}
+    settings.NOTIFICATION_RULES = {
+        **settings.NOTIFICATION_RULES,
+        "CHANNELS": {
+            **settings.NOTIFICATION_RULES["CHANNELS"],
+            "down": {"BACKEND": "django_notification_rules.channels.memory.MemoryChannel", "FAIL": "gateway down"},
+        },
+    }
     ann = member("ann")
     make_rule(channels=("down", "memory"), recipients=[("user", ann)])
 
@@ -62,8 +73,10 @@ def test_a_failing_channel_fails_its_delivery_only(make_rule, member, emit, outb
 
 def test_a_failed_delivery_is_sent_again(make_rule, member, emit, outbox, settings):
     channels = settings.NOTIFICATION_RULES["CHANNELS"]
-    settings.NOTIFICATION_RULES = {**settings.NOTIFICATION_RULES, "CHANNELS": {
-        **channels, "memory": {**channels["memory"], "FAIL": "down"}}}
+    settings.NOTIFICATION_RULES = {
+        **settings.NOTIFICATION_RULES,
+        "CHANNELS": {**channels, "memory": {**channels["memory"], "FAIL": "down"}},
+    }
     make_rule(recipients=[("user", member("ann"))])
     emit("orders.placed", number="A-1", amount="5")
     failed = Delivery.objects.get()
@@ -87,8 +100,10 @@ def test_a_template_that_fails_fails_its_delivery(make_rule, member, emit, outbo
 
 
 def test_a_channel_that_writes_once_per_event(make_rule, member, emit, settings):
-    settings.NOTIFICATION_RULES = {**settings.NOTIFICATION_RULES, "CHANNELS": {
-        **settings.NOTIFICATION_RULES["CHANNELS"], "room": {"BACKEND": "tests.test_dispatch.RoomChannel"}}}
+    settings.NOTIFICATION_RULES = {
+        **settings.NOTIFICATION_RULES,
+        "CHANNELS": {**settings.NOTIFICATION_RULES["CHANNELS"], "room": {"BACKEND": "tests.test_dispatch.RoomChannel"}},
+    }
     make_rule(channels=("room",), recipients=[("user", member("ann")), ("user", member("bob"))])
 
     emit("orders.placed", number="A-1", amount="5")

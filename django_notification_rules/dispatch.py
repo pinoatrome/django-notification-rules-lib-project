@@ -44,8 +44,11 @@ def _notify(rule: dict, event: Event) -> list[Delivery]:
         try:
             channel = channels.get(code)
         except (channels.ChannelError, ImproperlyConfigured) as exc:
-            made.append(Delivery.objects.create(event=event, rule_id=rule["id"], channel=code,
-                                                status=Delivery.Status.SKIPPED, error=str(exc)))
+            made.append(
+                Delivery.objects.create(
+                    event=event, rule_id=rule["id"], channel=code, status=Delivery.Status.SKIPPED, error=str(exc)
+                )
+            )
             continue
         if channel.per_recipient:
             if users is None:
@@ -67,7 +70,11 @@ def _deliver(rule: dict, event: Event, channel, user) -> Delivery:
         delivery.save()
         return delivery
     delivery.subject, delivery.body, delivery.link, delivery.language = (
-        text.subject[:255], text.body, text.link[:500], text.language)
+        text.subject[:255],
+        text.body,
+        text.link[:500],
+        text.language,
+    )
     delivery.save()
     send(delivery, channel)
     return delivery

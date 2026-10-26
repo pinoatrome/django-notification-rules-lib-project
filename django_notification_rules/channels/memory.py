@@ -15,7 +15,14 @@ class MemoryChannel(BaseChannel):
     def send(self, delivery) -> None:
         if self.options.get("FAIL"):
             raise ChannelError(self.options["FAIL"])
-        outbox.append({
-            "channel": self.code, "event": delivery.event.code, "recipient": delivery.recipient,
-            "subject": delivery.subject, "body": delivery.body, "link": delivery.link, "language": delivery.language,
-        })
+        outbox.append(
+            {
+                "channel": self.code,
+                "event": delivery.event.code,
+                "recipient": delivery.recipient,
+                "subject": delivery.subject,
+                "body": delivery.body,
+                "link": delivery.link,
+                "language": delivery.language,
+            }
+        )

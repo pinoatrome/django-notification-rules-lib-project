@@ -91,8 +91,9 @@ def _users_of(spec: dict, event) -> list:
         return list(User.objects.filter(groups__pk=spec.get("group_id")))
     if kind == "permission":
         backend = conf.get("PERMISSION_BACKEND")
-        return list(User.objects.with_perm(spec["value"], backend=backend) if backend
-                    else User.objects.with_perm(spec["value"]))
+        return list(
+            User.objects.with_perm(spec["value"], backend=backend) if backend else User.objects.with_perm(spec["value"])
+        )
     if kind == "resolver":
         resolver = REGISTRY.get(spec["value"])
         if resolver is None:

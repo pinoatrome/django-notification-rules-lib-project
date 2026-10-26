@@ -44,9 +44,17 @@ def test_a_single_test_needs_no_group():
 
 
 def test_groups_nest():
-    condition = {"any": [{"field": "amount", "op": "gt", "value": "1000"},
-                         {"all": [{"field": "urgent", "op": "eq", "value": True},
-                                  {"field": "customer", "op": "eq", "value": "Ann"}]}]}
+    condition = {
+        "any": [
+            {"field": "amount", "op": "gt", "value": "1000"},
+            {
+                "all": [
+                    {"field": "urgent", "op": "eq", "value": True},
+                    {"field": "customer", "op": "eq", "value": "Ann"},
+                ]
+            },
+        ]
+    }
 
     assert holds(condition)
     assert not holds(condition, {**PLACED, "customer": "Bob"})
@@ -69,14 +77,16 @@ def test_what_can_t_be_compared_doesn_t_hold():
 
 def test_validate_reports_every_problem():
     placed = events.get("orders.placed")
-    bad = {"all": [
-        {"field": "nope", "op": "eq", "value": 1},
-        {"field": "urgent", "op": "gt", "value": 1},
-        {"field": "amount", "op": "gt", "value": "lots"},
-        {"field": "amount", "op": "gt"},
-        {"any": "x"},
-        "junk",
-    ]}
+    bad = {
+        "all": [
+            {"field": "nope", "op": "eq", "value": 1},
+            {"field": "urgent", "op": "gt", "value": 1},
+            {"field": "amount", "op": "gt", "value": "lots"},
+            {"field": "amount", "op": "gt"},
+            {"any": "x"},
+            "junk",
+        ]
+    }
 
     with pytest.raises(conditions.ConditionError) as raised:
         conditions.validate(bad, placed)
@@ -86,14 +96,21 @@ def test_validate_reports_every_problem():
 
 
 def test_a_valid_condition_passes():
-    conditions.validate({"all": [{"field": "customer", "op": "is_empty"},
-                                 {"field": "amount", "op": "in", "value": "1,2"}]}, events.get("orders.placed"))
+    conditions.validate(
+        {"all": [{"field": "customer", "op": "is_empty"}, {"field": "amount", "op": "in", "value": "1,2"}]},
+        events.get("orders.placed"),
+    )
     conditions.validate({}, events.get("orders.placed"))
 
 
 def test_the_schema_lists_the_fields_and_their_operators():
     schema = conditions.schema(events.get("orders.shipped"))
 
-    assert schema["fields"][1] == {"name": "carrier", "type": "str", "label": "carrier", "required": True,
-                                   "choices": ["ups", "dhl"]}
+    assert schema["fields"][1] == {
+        "name": "carrier",
+        "type": "str",
+        "label": "carrier",
+        "required": True,
+        "choices": ["ups", "dhl"],
+    }
     assert "gte" not in schema["operators"]["str"] and "gte" in schema["operators"]["decimal"]

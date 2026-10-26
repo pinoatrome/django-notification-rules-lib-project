@@ -142,8 +142,14 @@ class EventType:
         given = self.sample() if self.sample is not None else None
         if given:
             return self.dump(given)
-        made_up = {"str": "…", "int": 1, "decimal": "1.00", "bool": True, "date": "2026-01-01",
-                   "datetime": "2026-01-01T12:00:00+00:00"}
+        made_up = {
+            "str": "…",
+            "int": 1,
+            "decimal": "1.00",
+            "bool": True,
+            "date": "2026-01-01",
+            "datetime": "2026-01-01T12:00:00+00:00",
+        }
         return {name: (spec.choices[0] if spec.choices else made_up[spec.type]) for name, spec in self.fields.items()}
 
     def template(self, channel: str) -> dict[str, str]:
@@ -154,8 +160,14 @@ class EventType:
 REGISTRY: dict[str, EventType] = {}
 
 
-def declare(code: str, *, fields: dict[str, Field] | None = None, description: str = "", sample=None,
-            templates: dict | None = None) -> EventType:
+def declare(
+    code: str,
+    *,
+    fields: dict[str, Field] | None = None,
+    description: str = "",
+    sample=None,
+    templates: dict | None = None,
+) -> EventType:
     """Register an event type (what `@event` does, without a sample function)."""
     reserved = sorted(set(fields or {}) & {"event", "recipient"})
     if reserved:
@@ -191,7 +203,9 @@ def get(code: str) -> EventType:
 
 def choices() -> list[tuple[str, str]]:
     """The event types for a select: (code, "code — description")."""
-    return [(code, f"{code} — {kind.description}" if kind.description else code) for code, kind in sorted(REGISTRY.items())]
+    return [
+        (code, f"{code} — {kind.description}" if kind.description else code) for code, kind in sorted(REGISTRY.items())
+    ]
 
 
 def emit(code: str, *, actor=None, **payload) -> None:

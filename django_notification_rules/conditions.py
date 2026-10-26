@@ -16,11 +16,21 @@ from django.utils.translation import gettext_lazy as _
 
 from .events import EventType
 
-COMMON = {"eq": _("is"), "ne": _("is not"), "in": _("is one of"), "not_in": _("is none of"),
-          "is_empty": _("is empty"), "is_not_empty": _("is not empty")}
+COMMON = {
+    "eq": _("is"),
+    "ne": _("is not"),
+    "in": _("is one of"),
+    "not_in": _("is none of"),
+    "is_empty": _("is empty"),
+    "is_not_empty": _("is not empty"),
+}
 ORDERED = {"lt": _("is less than"), "lte": _("is at most"), "gt": _("is more than"), "gte": _("is at least")}
-TEXT = {"contains": _("contains"), "not_contains": _("doesn't contain"), "startswith": _("starts with"),
-        "endswith": _("ends with")}
+TEXT = {
+    "contains": _("contains"),
+    "not_contains": _("doesn't contain"),
+    "startswith": _("starts with"),
+    "endswith": _("ends with"),
+}
 OPERATORS = {
     "str": {**COMMON, **TEXT},
     "int": {**COMMON, **ORDERED},
@@ -128,8 +138,10 @@ def matches(condition, event_type: EventType, payload: dict) -> bool:
             return False
         try:
             return {
-                "lt": lambda: actual < expected, "lte": lambda: actual <= expected,
-                "gt": lambda: actual > expected, "gte": lambda: actual >= expected,
+                "lt": lambda: actual < expected,
+                "lte": lambda: actual <= expected,
+                "gt": lambda: actual > expected,
+                "gte": lambda: actual >= expected,
                 "contains": lambda: str(expected).lower() in str(actual).lower(),
                 "not_contains": lambda: str(expected).lower() not in str(actual).lower(),
                 "startswith": lambda: str(actual).lower().startswith(str(expected).lower()),
@@ -146,8 +158,13 @@ def schema(event_type: EventType) -> dict:
     API's catalogue)."""
     return {
         "fields": [
-            {"name": name, "type": spec.type, "label": str(spec.label or name), "required": spec.required,
-             "choices": list(spec.choices)}
+            {
+                "name": name,
+                "type": spec.type,
+                "label": str(spec.label or name),
+                "required": spec.required,
+                "choices": list(spec.choices),
+            }
             for name, spec in event_type.fields.items()
         ],
         "operators": {kind: {op: str(label) for op, label in ops.items()} for kind, ops in OPERATORS.items()},

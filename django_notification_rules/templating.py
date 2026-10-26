@@ -21,6 +21,7 @@ from django.utils import translation
 
 from . import conf, events
 
+
 class _Engine(Engine):
     # Django's built-in tags and filters, without its loader tags (include, extends, block).
     default_builtins = ["django.template.defaulttags", "django.template.defaultfilters"]
@@ -67,8 +68,13 @@ def recipient_context(user) -> dict:
     if user is None:
         return {}
     first, last = getattr(user, "first_name", ""), getattr(user, "last_name", "")
-    return {"username": user.get_username(), "first_name": first, "last_name": last,
-            "full_name": f"{first} {last}".strip() or user.get_username(), "email": getattr(user, "email", "")}
+    return {
+        "username": user.get_username(),
+        "first_name": first,
+        "last_name": last,
+        "full_name": f"{first} {last}".strip() or user.get_username(),
+        "email": getattr(user, "email", ""),
+    }
 
 
 def context(event, user) -> dict:
@@ -76,8 +82,11 @@ def context(event, user) -> dict:
         description = str(events.get(event.code).description)
     except events.UnknownEvent:
         description = ""
-    return {**event.data, "event": {"code": event.code, "description": description, "created_at": event.created_at},
-            "recipient": recipient_context(user)}
+    return {
+        **event.data,
+        "event": {"code": event.code, "description": description, "created_at": event.created_at},
+        "recipient": recipient_context(user),
+    }
 
 
 def pick(templates: list[dict], channel: str, language: str) -> dict | None:
@@ -115,5 +124,9 @@ def text_for(templates: list[dict], channel: str, event, user, language: str | N
     with translation.override(language):
         source = source_for(templates, channel, language, event.code)
         values = context(event, user)
-        return Text(render(source.get("subject", ""), values), render(source.get("body", ""), values),
-                    render(source.get("link", ""), values), language)
+        return Text(
+            render(source.get("subject", ""), values),
+            render(source.get("body", ""), values),
+            render(source.get("link", ""), values),
+            language,
+        )

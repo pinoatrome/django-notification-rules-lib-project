@@ -13,5 +13,11 @@ class InboxChannel(BaseChannel):
 
         if delivery.recipient_id is None:
             raise ChannelError("The inbox writes to a user: the delivery has none")
-        InboxMessage.objects.create(user_id=delivery.recipient_id, delivery=delivery, event_code=delivery.event.code,
-                                    subject=delivery.subject, body=delivery.body, link=delivery.link)
+        InboxMessage.objects.create(
+            user_id=delivery.recipient_id,
+            delivery=delivery,
+            event_code=delivery.event.code,
+            subject=delivery.subject,
+            body=delivery.body,
+            link=delivery.link,
+        )

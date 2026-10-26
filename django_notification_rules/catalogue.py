@@ -13,8 +13,10 @@ def event_entry(event_type: events.EventType) -> dict:
         "code": event_type.code,
         "description": str(event_type.description),
         **conditions.schema(event_type),
-        "templates": {channel: {key: str(value) for key, value in texts.items()}
-                      for channel, texts in event_type.templates.items()},
+        "templates": {
+            channel: {key: str(value) for key, value in texts.items()}
+            for channel, texts in event_type.templates.items()
+        },
         "sample": sample,
     }
 
@@ -22,7 +24,9 @@ def event_entry(event_type: events.EventType) -> dict:
 def catalogue() -> dict:
     return {
         "events": [event_entry(kind) for _code, kind in sorted(events.REGISTRY.items())],
-        "resolvers": [{"code": code, "description": str(r.description)} for code, r in sorted(recipients.REGISTRY.items())],
+        "resolvers": [
+            {"code": code, "description": str(r.description)} for code, r in sorted(recipients.REGISTRY.items())
+        ],
         "recipient_kinds": list(recipients.KINDS),
         "channels": [{"code": code, "label": label} for code, label in channels.choices()],
     }

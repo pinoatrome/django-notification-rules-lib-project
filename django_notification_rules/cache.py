@@ -12,8 +12,11 @@ def load(code: str) -> list[dict]:
     """The enabled rules of `code`, from the database: their condition, recipients, enabled channels, templates."""
     from .models import NotificationRule
 
-    rules = (NotificationRule.objects.filter(event_code=code, enabled=True)
-             .prefetch_related("recipients", "channels", "templates").order_by("name"))
+    rules = (
+        NotificationRule.objects.filter(event_code=code, enabled=True)
+        .prefetch_related("recipients", "channels", "templates")
+        .order_by("name")
+    )
     return [
         {
             "id": rule.pk,

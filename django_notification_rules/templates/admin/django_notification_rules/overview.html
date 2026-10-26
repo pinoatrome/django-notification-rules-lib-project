@@ -1,0 +1,41 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<p>{% translate "Channels set up:" %} {{ channels|join:", "|default:"-" }}.
+   {% translate "Resolvers:" %} {% for code, resolver in resolvers %}<span title="{{ resolver.description }}">{{ code }}</span>{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}.</p>
+<table class="nr-overview">
+  <thead>
+    <tr><th>{% translate "Event" %}</th><th>{% translate "Fields" %}</th><th>{% translate "Rules" %}</th></tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr{% if row.unknown %} class="nr-unknown"{% endif %}>
+      <td><strong>{{ row.code }}</strong><br><small>{{ row.description }}</small></td>
+      <td>{{ row.fields|join:", " }}</td>
+      <td>
+        {% for rule in row.rules %}
+          <div>
+            <a href="{% url opts|admin_urlname:'change' rule.pk %}">{{ rule.name }}</a>
+            {% if not rule.enabled %}<em>({% translate "off" %})</em>{% endif %}
+            — {% for channel in rule.channels.all %}{{ channel.channel }}{% if not channel.enabled %} ({% translate "off" %}){% endif %}{% if not forloop.last %}, {% endif %}{% empty %}{% translate "no channel" %}{% endfor %}
+            — {% for recipient in rule.recipients.all %}{{ recipient }}{% if not forloop.last %}, {% endif %}{% empty %}{% translate "no recipient" %}{% endfor %}
+          </div>
+        {% empty %}
+          <em>{% translate "No rule: nobody is notified." %}</em>
+        {% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

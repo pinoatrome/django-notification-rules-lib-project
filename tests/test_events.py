@@ -8,6 +8,8 @@ from django_notification_rules import events
 from django_notification_rules.events import Field
 from django_notification_rules.models import Event
 
+UTC = datetime.timezone.utc
+
 
 def test_the_apps_event_types_are_discovered():
     placed = events.get("orders.placed")
@@ -34,7 +36,7 @@ def test_an_unknown_event_type_is_refused():
         (Field("date"), datetime.date(2026, 1, 2), "2026-01-02"),
         (Field("date"), datetime.datetime(2026, 1, 2, 10, 0), "2026-01-02"),
         (Field("date"), "2026-01-02", "2026-01-02"),
-        (Field("datetime"), datetime.datetime(2026, 1, 2, 10, 0, tzinfo=datetime.UTC), "2026-01-02T10:00:00+00:00"),
+        (Field("datetime"), datetime.datetime(2026, 1, 2, 10, 0, tzinfo=UTC), "2026-01-02T10:00:00+00:00"),
         (Field("str"), None, None),
     ],
 )
@@ -42,8 +44,16 @@ def test_a_value_is_stored_as_json(spec, value, stored):
     assert spec.dump(value) == stored
 
 
-@pytest.mark.parametrize(("spec", "value"), [(Field("int"), True), (Field("int"), "x"), (Field("decimal"), "x"),
-                                             (Field("bool"), "yes"), (Field("date"), "tomorrow")])
+@pytest.mark.parametrize(
+    ("spec", "value"),
+    [
+        (Field("int"), True),
+        (Field("int"), "x"),
+        (Field("decimal"), "x"),
+        (Field("bool"), "yes"),
+        (Field("date"), "tomorrow"),
+    ],
+)
 def test_a_value_of_the_wrong_type_is_refused(spec, value):
     with pytest.raises(events.PayloadError):
         spec.dump(value)
@@ -62,7 +72,7 @@ def test_a_field_type_must_be_known():
         (Field("bool"), False, False),
         (Field("date"), datetime.datetime(2026, 1, 2, 3, 4), datetime.date(2026, 1, 2)),
         (Field("date"), datetime.date(2026, 1, 2), datetime.date(2026, 1, 2)),
-        (Field("datetime"), "2026-01-02T03:04:00+00:00", datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)),
+        (Field("datetime"), "2026-01-02T03:04:00+00:00", datetime.datetime(2026, 1, 2, 3, 4, tzinfo=UTC)),
         (Field("datetime"), datetime.datetime(2026, 1, 2), datetime.datetime(2026, 1, 2)),
         (Field("str"), "", None),
     ],
@@ -75,7 +85,12 @@ def test_a_payload_is_checked_against_the_fields():
     placed = events.get("orders.placed")
 
     assert placed.dump({"number": "A-1", "amount": Decimal("9.90")}) == {
-        "number": "A-1", "amount": "9.90", "customer": None, "urgent": None, "due": None}
+        "number": "A-1",
+        "amount": "9.90",
+        "customer": None,
+        "urgent": None,
+        "due": None,
+    }
     with pytest.raises(events.PayloadError, match="needs number"):
         placed.dump({"amount": "1"})
     with pytest.raises(events.PayloadError, match="unknown payload fields colour"):
@@ -88,7 +103,12 @@ def test_a_stored_payload_is_parsed_and_tolerates_bad_values():
     placed = events.get("orders.placed")
 
     assert placed.parse({"number": "A-1", "amount": "1.50", "due": "garbage"}) == {
-        "number": "A-1", "amount": Decimal("1.50"), "customer": None, "urgent": None, "due": "garbage"}
+        "number": "A-1",
+        "amount": Decimal("1.50"),
+        "customer": None,
+        "urgent": None,
+        "due": "garbage",
+    }
 
 
 def test_the_sample_payload_is_the_code_s_or_made_up():
@@ -138,9 +158,11 @@ def test_an_event_of_a_type_no_longer_declared_keeps_its_payload():
 def test_a_signal_feeds_an_event_type(django_capture_on_commit_callbacks, member):
     ann = member("ann")
     placed = Signal()
-    events.connect_signal(placed, "orders.placed",
-                          lambda sender, order, **kw: None if order == "skip" else {"number": order, "amount": "1",
-                                                                                    "actor": ann})
+    events.connect_signal(
+        placed,
+        "orders.placed",
+        lambda sender, order, **kw: None if order == "skip" else {"number": order, "amount": "1", "actor": ann},
+    )
 
     with django_capture_on_commit_callbacks(execute=True):
         placed.send(sender=None, order="skip")

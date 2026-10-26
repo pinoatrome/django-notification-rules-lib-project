@@ -41,18 +41,26 @@ def make_rule(db):
     """A rule of `event` sending through `channels` to `recipients` ((kind, user|group|value) pairs), with
     `templates` ({(channel, language): (subject, body, link)})."""
 
-    def make(name="rule", event="orders.placed", *, channels=("memory",), recipients=(), templates=None,
-             condition=None, enabled=True):
-        rule = NotificationRule.objects.create(name=name, event_code=event, condition=condition or {},
-                                               enabled=enabled)
+    def make(
+        name="rule",
+        event="orders.placed",
+        *,
+        channels=("memory",),
+        recipients=(),
+        templates=None,
+        condition=None,
+        enabled=True,
+    ):
+        rule = NotificationRule.objects.create(name=name, event_code=event, condition=condition or {}, enabled=enabled)
         for code in channels:
             RuleChannel.objects.create(rule=rule, channel=code)
         for kind, target in recipients:
             fields = {"user": {"user": target}, "group": {"group": target}}.get(kind, {"value": target})
             RuleRecipient.objects.create(rule=rule, kind=kind, **fields)
         for (channel, language), (subject, body, link) in (templates or {}).items():
-            RuleTemplate.objects.create(rule=rule, channel=channel, language=language, subject=subject, body=body,
-                                        link=link)
+            RuleTemplate.objects.create(
+                rule=rule, channel=channel, language=language, subject=subject, body=body, link=link
+            )
         return rule
 
     return make

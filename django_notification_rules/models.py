@@ -19,8 +19,11 @@ class NotificationRule(models.Model):
     description = models.TextField(_("description"), blank=True, default="")
     enabled = models.BooleanField(_("enabled"), default=True)
     condition = models.JSONField(
-        _("condition"), default=dict, blank=True,
-        help_text=_("On the event's payload: all/any of {field, op, value}. Empty: every event."))
+        _("condition"),
+        default=dict,
+        blank=True,
+        help_text=_("On the event's payload: all/any of {field, op, value}. Empty: every event."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -54,12 +57,24 @@ class RuleRecipient(models.Model):
 
     rule = models.ForeignKey(NotificationRule, on_delete=models.CASCADE, related_name="recipients")
     kind = models.CharField(_("kind"), max_length=10, choices=Kind.choices)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
-                             related_name="+", verbose_name=_("user"))
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True, related_name="+",
-                              verbose_name=_("group"))
-    value = models.CharField(_("permission or resolver"), max_length=150, blank=True, default="",
-                             help_text=_("app_label.codename for a permission; a resolver's code."))
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("user"),
+    )
+    group = models.ForeignKey(
+        Group, on_delete=models.CASCADE, null=True, blank=True, related_name="+", verbose_name=_("group")
+    )
+    value = models.CharField(
+        _("permission or resolver"),
+        max_length=150,
+        blank=True,
+        default="",
+        help_text=_("app_label.codename for a permission; a resolver's code."),
+    )
 
     class Meta:
         verbose_name = _("recipient")
@@ -106,8 +121,13 @@ class RuleTemplate(models.Model):
 
     rule = models.ForeignKey(NotificationRule, on_delete=models.CASCADE, related_name="templates")
     channel = models.CharField(_("channel"), max_length=50, default="*", help_text=_("* for any channel."))
-    language = models.CharField(_("language"), max_length=10, blank=True, default="",
-                                help_text=_("A language code (en, it, pt-br); empty for any language."))
+    language = models.CharField(
+        _("language"),
+        max_length=10,
+        blank=True,
+        default="",
+        help_text=_("A language code (en, it, pt-br); empty for any language."),
+    )
     subject = models.CharField(_("subject"), max_length=255, blank=True, default="")
     body = models.TextField(_("body"), blank=True, default="")
     link = models.CharField(_("link"), max_length=500, blank=True, default="")
@@ -138,8 +158,14 @@ class Event(models.Model):
 
     code = models.CharField(_("event"), max_length=100, db_index=True)
     payload = models.JSONField(_("payload"), default=dict)
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                              related_name="+", verbose_name=_("actor"))
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("actor"),
+    )
     created_at = models.DateTimeField(_("created"), auto_now_add=True, db_index=True)
     processed_at = models.DateTimeField(_("processed"), null=True, blank=True)
     error = models.TextField(_("error"), blank=True, default="")
@@ -173,11 +199,18 @@ class Delivery(models.Model):
         SKIPPED = "skipped", _("skipped")
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="deliveries")
-    rule = models.ForeignKey(NotificationRule, on_delete=models.SET_NULL, null=True, blank=True,
-                             related_name="deliveries")
+    rule = models.ForeignKey(
+        NotificationRule, on_delete=models.SET_NULL, null=True, blank=True, related_name="deliveries"
+    )
     channel = models.CharField(_("channel"), max_length=50)
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                  related_name="+", verbose_name=_("recipient"))
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("recipient"),
+    )
     language = models.CharField(_("language"), max_length=10, blank=True, default="")
     subject = models.CharField(_("subject"), max_length=255, blank=True, default="")
     body = models.TextField(_("body"), blank=True, default="")
@@ -201,10 +234,12 @@ class Delivery(models.Model):
 class InboxMessage(models.Model):
     """A notification in a user's in-app inbox (the `inbox` channel)."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="inbox_messages",
-                             verbose_name=_("user"))
-    delivery = models.OneToOneField(Delivery, on_delete=models.SET_NULL, null=True, blank=True,
-                                    related_name="inbox_message")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="inbox_messages", verbose_name=_("user")
+    )
+    delivery = models.OneToOneField(
+        Delivery, on_delete=models.SET_NULL, null=True, blank=True, related_name="inbox_message"
+    )
     event_code = models.CharField(_("event"), max_length=100)
     subject = models.CharField(_("subject"), max_length=255, blank=True, default="")
     body = models.TextField(_("body"), blank=True, default="")

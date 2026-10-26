@@ -20,7 +20,11 @@ def test_a_user_and_a_group(member):
     member("cid", "STAFF")
     staff = Group.objects.get(name="STAFF")
 
-    assert users([{"kind": "user", "user_id": ann.pk}, {"kind": "group", "group_id": staff.pk}]) == ["ann", "bob", "cid"]
+    assert users([{"kind": "user", "user_id": ann.pk}, {"kind": "group", "group_id": staff.pk}]) == [
+        "ann",
+        "bob",
+        "cid",
+    ]
 
 
 def test_each_user_once_and_the_inactive_never(member):
@@ -43,8 +47,10 @@ def test_the_holders_of_a_permission(member):
 
 
 def test_the_holders_of_a_permission_by_a_backend(member, settings):
-    settings.NOTIFICATION_RULES = {**settings.NOTIFICATION_RULES,
-                                   "PERMISSION_BACKEND": "django.contrib.auth.backends.ModelBackend"}
+    settings.NOTIFICATION_RULES = {
+        **settings.NOTIFICATION_RULES,
+        "PERMISSION_BACKEND": "django.contrib.auth.backends.ModelBackend",
+    }
     member("root", is_superuser=True)
 
     assert users([{"kind": "permission", "value": "django_notification_rules.view_notificationrule"}]) == ["root"]
@@ -62,16 +68,23 @@ def test_the_actor_and_the_superusers(member):
     member("root", is_superuser=True)
     happened = Event.objects.create(code="orders.placed", payload={}, actor=ann)
 
-    assert users([{"kind": "resolver", "value": "actor"}, {"kind": "resolver", "value": "superusers"}],
-                 happened) == ["ann", "root"]
+    assert users([{"kind": "resolver", "value": "actor"}, {"kind": "resolver", "value": "superusers"}], happened) == [
+        "ann",
+        "root",
+    ]
     assert users([{"kind": "resolver", "value": "actor"}]) == []
 
 
 def test_a_failing_or_unknown_resolver_finds_no_one(member, caplog):
     ann = member("ann")
 
-    found = users([{"kind": "resolver", "value": "broken"}, {"kind": "resolver", "value": "gone"},
-                   {"kind": "user", "user_id": ann.pk}])
+    found = users(
+        [
+            {"kind": "resolver", "value": "broken"},
+            {"kind": "resolver", "value": "gone"},
+            {"kind": "user", "user_id": ann.pk},
+        ]
+    )
 
     assert found == ["ann"]
     assert "no customers today" in caplog.text and "no resolver 'gone'" in caplog.text

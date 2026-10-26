@@ -14,7 +14,9 @@ from django_notification_rules.events import Field, event
         "urgent": Field("bool", _("Urgent"), required=False),
         "due": Field("date", _("Due"), required=False),
     },
-    templates={"*": {"subject": _("Order placed"), "body": "Order {{ number }}: {{ amount }}", "link": "/orders/{{ number }}"}},
+    templates={
+        "*": {"subject": _("Order placed"), "body": "Order {{ number }}: {{ amount }}", "link": "/orders/{{ number }}"}
+    },
 )
 def order_placed():
     """A customer placed an order."""

@@ -12,8 +12,9 @@ pytestmark = pytest.mark.django_db
 
 def delivery(user=None, **fields):
     event = Event.objects.create(code="orders.placed", payload={})
-    return Delivery.objects.create(event=event, channel="x", recipient=user, subject="Hi", body="Body", link="/l",
-                                   language="en", **fields)
+    return Delivery.objects.create(
+        event=event, channel="x", recipient=user, subject="Hi", body="Body", link="/l", language="en", **fields
+    )
 
 
 def test_the_channels_set_up():
